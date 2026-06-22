@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}Doctor Dashboard – MedCare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dash-page { padding: 2rem 0; }
+    .dash-header { background:linear-gradient(135deg,#1a5276,#16a085); color:white; padding:2rem; border-radius:16px; margin-bottom:2rem; }
+    .dash-header h1 { font-size:1.6rem; font-weight:800; margin:0; }
+    .stat-card { background:white; border-radius:16px; padding:1.5rem; box-shadow:0 6px 24px rgba(26,82,118,0.1); border-left:5px solid; }
+    .stat-card.blue   { border-color:#1a5276; }
+    .stat-card.teal   { border-color:#16a085; }
+    .stat-card.orange { border-color:#f39c12; }
+    .stat-card.purple { border-color:#8e44ad; }
+    .stat-num { font-size:2rem; font-weight:900; }
+    .stat-label { font-size:0.85rem; color:#888; }
+    .content-card { background:white; border-radius:16px; box-shadow:0 6px 24px rgba(26,82,118,0.1); overflow:hidden; }
+    .card-head { padding:1.2rem 1.5rem; font-weight:700; font-size:0.95rem; border-bottom:2px solid #f0f4f8; }
+    .card-body-inner { padding:1.5rem; }
+    table { width:100%; border-collapse:collapse; }
+    th { background:#f8fafc; font-size:0.82rem; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.5px; padding:0.8rem 1rem; }
+    td { padding:0.85rem 1rem; font-size:0.92rem; border-top:1px solid #f0f4f8; vertical-align:middle; }
+    .status-badge { padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:700; }
+    .status-pending   { background:#fff3cd; color:#856404; }
+    .status-approved  { background:#d1e7dd; color:#0a3622; }
+    .status-rejected  { background:#f8d7da; color:#842029; }
+    .status-completed { background:#cff4fc; color:#055160; }
+    .status-cancelled { background:#e2e3e5; color:#41464b; }
+    .btn-sm-action { padding:4px 12px; border-radius:8px; font-size:0.82rem; font-weight:600; border:none; cursor:pointer; text-decoration:none; display:inline-block; transition:opacity 0.2s; }
+    .btn-sm-action:hover { opacity:0.85; }
+    .btn-approve-sm  { background:#16a085; color:white; }
+    .btn-reject-sm   { background:#e74c3c; color:white; }
+    .btn-complete-sm { background:#1a5276; color:white; }
+    .empty-state { padding:2rem; text-align:center; color:#aaa; }
+    .sidebar-quick-link { display:flex; align-items:center; gap:10px; padding:0.8rem 1rem; border-radius:10px; color:#444; font-weight:500; text-decoration:none; margin-bottom:4px; transition:all 0.2s; background:white; border:1px solid #e8edf2; }
+    .sidebar-quick-link:hover { background:rgba(26,82,118,0.07); color:#1a5276; border-color:#1a5276; }
+    .sidebar-quick-link i { color:#1a5276; font-size:1.1rem; }
+    .profile-chip { background:rgba(255,255,255,0.2); border-radius:50px; padding:0.4rem 1rem; display:inline-flex; align-items:center; gap:8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dash-page container-fluid px-4">
+
+    <!-- HEADER -->
+    <div class="dash-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <p class="opacity-75 mb-1" style="font-size:0.88rem">Doctor Dashboard</p>
+                <h1><i class="bi bi-stethoscope me-2"></i>Welcome, Dr. {{ profile.full_name|default:user.username }}</h1>
+                <div class="mt-2">
+                    <span class="profile-chip"><i class="bi bi-patch-check-fill"></i>{{ profile.specialization }}</span>
+                    {% if profile.hospital_name %}
+                    <span class="profile-chip ms-2"><i class="bi bi-hospital"></i>{{ profile.hospital_name }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-auto">
+                {% if profile.profile_picture %}
+                <img src="{{ profile.profile_picture.url }}" alt="Profile" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.5)">
+                {% else %}
+                <div style="width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:2rem;border:3px solid rgba(255,255,255,0.4)">🩺</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card blue">
+                <div class="stat-num text-primary">{{ all_appointments|length }}</div>
+                <div class="stat-label"><i class="bi bi-calendar-check me-1"></i>Total Appts</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card orange">
+                <div class="stat-num" style="color:#f39c12">{{ pending_appointments|length }}</div>
+                <div class="stat-label"><i class="bi bi-hourglass-split me-1"></i>Pending</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card teal">
+                <div class="stat-num" style="color:#16a085">{{ today_appointments|length }}</div>
+                <div class="stat-label"><i class="bi bi-calendar-day me-1"></i>Today</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card purple">
+                <div class="stat-num" style="color:#8e44ad">{{ completed_count }}</div>
+                <div class="stat-label"><i class="bi bi-check-circle me-1"></i>Completed</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- MAIN: APPOINTMENTS -->
+        <div class="col-lg-8">
+
+            <!-- TODAY'S APPOINTMENTS -->
+            <div class="content-card mb-4">
+                <div class="card-head" style="color:#16a085">
+                    <i class="bi bi-calendar-day me-2"></i>Today's Appointments
+                </div>
+                {% if today_appointments %}
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Patient</th><th>Time</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            {% for appt in today_appointments %}
+                            <tr>
+                                <td><div class="fw-600">{{ appt.patient.username }}</div></td>
+                                <td>{{ appt.time }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ appt.status|lower }}">
+                                        {% if appt.status == 'Pending' %}⏳{% elif appt.status == 'Approved' %}✅{% elif appt.status == 'Rejected' %}❌{% elif appt.status == 'Completed' %}🏁{% endif %}
+                                        {{ appt.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if appt.status == 'Pending' %}
+                                    <a href="{% url 'update_appointment_status' appt.id 'Approved' %}" class="btn-sm-action btn-approve-sm me-1">Approve</a>
+                                    <a href="{% url 'update_appointment_status' appt.id 'Rejected' %}" class="btn-sm-action btn-reject-sm">Reject</a>
+                                    {% elif appt.status == 'Approved' %}
+                                    <a href="{% url 'update_appointment_status' appt.id 'Completed' %}" class="btn-sm-action btn-complete-sm">Mark Done</a>
+                                    {% else %}—{% endif %}
+                                    <a href="{% url 'chat' appt.id %}" class="btn-sm-action ms-1" style="background:#8e44ad;color:white">
+                                        <i class="bi bi-chat-dots"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state"><i class="bi bi-calendar-x" style="font-size:2rem;display:block;margin-bottom:0.5rem"></i>No appointments today.</div>
+                {% endif %}
+            </div>
+
+            <!-- ALL APPOINTMENTS -->
+            <div class="content-card">
+                <div class="card-head" style="color:#1a5276">
+                    <i class="bi bi-list-check me-2"></i>All Appointments
+                </div>
+                {% if all_appointments %}
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Patient</th><th>Date</th><th>Time</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            {% for appt in all_appointments %}
+                            <tr>
+                                <td><div class="fw-600">{{ appt.patient.username }}</div></td>
+                                <td>{{ appt.date }}</td>
+                                <td>{{ appt.time }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ appt.status|lower }}">{{ appt.status }}</span>
+                                </td>
+                                <td>
+                                    {% if appt.status == 'Pending' %}
+                                    <a href="{% url 'update_appointment_status' appt.id 'Approved' %}" class="btn-sm-action btn-approve-sm me-1">Approve</a>
+                                    <a href="{% url 'update_appointment_status' appt.id 'Rejected' %}" class="btn-sm-action btn-reject-sm">Reject</a>
+                                    {% elif appt.status == 'Approved' %}
+                                    <a href="{% url 'update_appointment_status' appt.id 'Completed' %}" class="btn-sm-action btn-complete-sm">Complete</a>
+                                    {% else %}—{% endif %}
+                                    <a href="{% url 'chat' appt.id %}" class="btn-sm-action ms-1" style="background:#8e44ad;color:white" title="Chat">
+                                        <i class="bi bi-chat-dots"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state"><i class="bi bi-calendar-x" style="font-size:2rem;display:block;margin-bottom:0.5rem"></i>No appointments yet.</div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="col-lg-4">
+            <div class="content-card mb-4">
+                <div class="card-head"><i class="bi bi-grid me-2"></i>Quick Links</div>
+                <div class="card-body-inner">
+                    <a href="{% url 'doctor_appointments' %}" class="sidebar-quick-link">
+                        <i class="bi bi-calendar-check"></i>My Appointments
+                    </a>
+                    <a href="{% url 'doctor_profile_edit' %}" class="sidebar-quick-link">
+                        <i class="bi bi-person-gear"></i>Edit My Profile
+                    </a>
+                    <a href="{% url 'ai_home' %}" class="sidebar-quick-link">
+                        <i class="bi bi-robot"></i>AI Assistant
+                    </a>
+                    <a href="{% url 'doctor_list' %}" class="sidebar-quick-link">
+                        <i class="bi bi-search"></i>View All Doctors
+                    </a>
+                    <a href="{% url 'logout' %}" class="sidebar-quick-link" style="color:#e74c3c">
+                        <i class="bi bi-box-arrow-right" style="color:#e74c3c"></i>Logout
+                    </a>
+                </div>
+            </div>
+
+            <!-- PROFILE SUMMARY -->
+            <div class="content-card">
+                <div class="card-head"><i class="bi bi-person-badge me-2"></i>My Profile</div>
+                <div class="card-body-inner">
+                    <div class="mb-2"><span class="text-muted" style="font-size:0.82rem">Specialization</span><br><strong>{{ profile.specialization }}</strong></div>
+                    <div class="mb-2"><span class="text-muted" style="font-size:0.82rem">Qualification</span><br><strong>{{ profile.qualification|default:"Not set" }}</strong></div>
+                    <div class="mb-2"><span class="text-muted" style="font-size:0.82rem">Experience</span><br><strong>{{ profile.experience }} years</strong></div>
+                    <div class="mb-2"><span class="text-muted" style="font-size:0.82rem">Hospital</span><br><strong>{{ profile.hospital_name|default:"Not set" }}</strong></div>
+                    <div class="mb-0"><span class="text-muted" style="font-size:0.82rem">Doctor ID</span><br><strong>{{ profile.doctor_id }}</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

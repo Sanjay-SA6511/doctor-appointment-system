@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}Patient Dashboard – MedCare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dash-page { padding: 2rem 0; }
+    .dash-header { background:linear-gradient(135deg,#1a5276,#16a085); color:white; padding:2rem; border-radius:16px; margin-bottom:2rem; }
+    .dash-header h1 { font-size:1.6rem; font-weight:800; margin:0; }
+    .stat-card { background:white; border-radius:16px; padding:1.5rem; box-shadow:0 6px 24px rgba(26,82,118,0.1); border-left:5px solid; }
+    .stat-card.blue { border-color:#1a5276; }
+    .stat-card.orange { border-color:#f39c12; }
+    .stat-card.teal { border-color:#16a085; }
+    .stat-num { font-size:2rem; font-weight:900; }
+    .stat-label { font-size:0.85rem; color:#888; }
+    .content-card { background:white; border-radius:16px; box-shadow:0 6px 24px rgba(26,82,118,0.1); overflow:hidden; }
+    .card-head { padding:1.2rem 1.5rem; font-weight:700; font-size:0.95rem; border-bottom:2px solid #f0f4f8; }
+    .card-body-inner { padding:1.5rem; }
+    .doctor-card { background:white; border-radius:14px; border:2px solid #f0f4f8; padding:1.2rem; transition:all 0.25s; }
+    .doctor-card:hover { border-color:#1a5276; box-shadow:0 8px 24px rgba(26,82,118,0.12); transform:translateY(-2px); }
+    .doc-avatar { width:52px; height:52px; border-radius:50%; object-fit:cover; background:#e8edf2; display:flex; align-items:center; justify-content:center; font-size:1.6rem; }
+    .spec-tag { background:rgba(26,82,118,0.1); color:#1a5276; border-radius:20px; padding:3px 10px; font-size:0.78rem; font-weight:600; }
+    .status-badge { padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:700; }
+    .status-pending   { background:#fff3cd; color:#856404; }
+    .status-approved  { background:#d1e7dd; color:#0a3622; }
+    .status-rejected  { background:#f8d7da; color:#842029; }
+    .status-completed { background:#cff4fc; color:#055160; }
+    .status-cancelled { background:#e2e3e5; color:#41464b; }
+    table { width:100%; border-collapse:collapse; }
+    th { background:#f8fafc; font-size:0.82rem; font-weight:700; color:#555; text-transform:uppercase; padding:0.8rem 1rem; }
+    td { padding:0.85rem 1rem; font-size:0.92rem; border-top:1px solid #f0f4f8; vertical-align:middle; }
+    .sidebar-quick-link { display:flex; align-items:center; gap:10px; padding:0.8rem 1rem; border-radius:10px; color:#444; font-weight:500; text-decoration:none; margin-bottom:4px; transition:all 0.2s; background:white; border:1px solid #e8edf2; }
+    .sidebar-quick-link:hover { background:rgba(26,82,118,0.07); color:#1a5276; border-color:#1a5276; }
+    .sidebar-quick-link i { color:#1a5276; font-size:1.1rem; }
+    .search-bar { border:2px solid #e8edf2; border-radius:12px; padding:0.7rem 1rem; width:100%; font-size:0.95rem; outline:none; transition:border-color 0.2s; }
+    .search-bar:focus { border-color:#1a5276; }
+    .btn-book { background:linear-gradient(135deg,#1a5276,#16a085); color:white; border:none; border-radius:8px; padding:6px 14px; font-size:0.83rem; font-weight:600; text-decoration:none; display:inline-block; transition:opacity 0.2s; }
+    .btn-book:hover { opacity:0.9; color:white; }
+    .empty-state { padding:2rem; text-align:center; color:#aaa; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dash-page container-fluid px-4">
+
+    <!-- HEADER -->
+    <div class="dash-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <p class="opacity-75 mb-1" style="font-size:0.88rem">Patient Dashboard</p>
+                <h1><i class="bi bi-person-circle me-2"></i>Welcome, {{ profile.full_name|default:user.username }}</h1>
+                {% if profile %}
+                <span style="background:rgba(255,255,255,0.2);border-radius:50px;padding:0.3rem 1rem;font-size:0.85rem">
+                    <i class="bi bi-gender-ambiguous me-1"></i>{{ profile.gender }} · {{ profile.age }} yrs
+                </span>
+                {% endif %}
+            </div>
+            <div class="col-auto">
+                {% if profile and profile.profile_picture %}
+                <img src="{{ profile.profile_picture.url }}" alt="Profile" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.5)">
+                {% else %}
+                <div style="width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:2rem;border:3px solid rgba(255,255,255,0.4)">🧑‍⚕️</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="stat-card blue">
+                <div class="stat-num text-primary">{{ total_appointments }}</div>
+                <div class="stat-label"><i class="bi bi-calendar-check me-1"></i>Total Appointments</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="stat-card orange">
+                <div class="stat-num" style="color:#f39c12">{{ pending_count }}</div>
+                <div class="stat-label"><i class="bi bi-hourglass-split me-1"></i>Pending</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="stat-card teal">
+                <div class="stat-num" style="color:#16a085">{{ approved_doctors|length }}</div>
+                <div class="stat-label"><i class="bi bi-person-badge me-1"></i>Available Doctors</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- MAIN -->
+        <div class="col-lg-8">
+
+            <!-- QUICK DOCTOR SEARCH -->
+            <div class="content-card mb-4">
+                <div class="card-head" style="color:#1a5276"><i class="bi bi-search me-2"></i>Find a Doctor</div>
+                <div class="card-body-inner">
+                    <form method="GET" action="{% url 'doctor_list' %}">
+                        <div class="row g-2">
+                            <div class="col-md-7">
+                                <input type="text" name="search" class="search-bar" placeholder="Search by name, hospital, specialization...">
+                            </div>
+                            <div class="col-md-3">
+                                <select name="specialization" class="search-bar" style="border-radius:12px">
+                                    <option value="">All Specializations</option>
+                                    <option>Cardiologist</option><option>Dermatologist</option>
+                                    <option>Neurologist</option><option>Orthopedic</option>
+                                    <option>Pediatrician</option><option>Psychiatrist</option>
+                                    <option>General Physician</option><option>Dentist</option>
+                                    <option>ENT</option><option>Gynecologist</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn-book w-100 py-2">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                    {% if approved_doctors %}
+                    <div class="row g-3 mt-2">
+                        {% for doc in approved_doctors %}
+                        <div class="col-md-6">
+                            <div class="doctor-card">
+                                <div class="d-flex align-items-center gap-3 mb-2">
+                                    {% if doc.profile_picture %}
+                                    <img src="{{ doc.profile_picture.url }}" class="doc-avatar" alt="{{ doc.full_name }}">
+                                    {% else %}
+                                    <div class="doc-avatar">🩺</div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-700" style="font-size:0.95rem">Dr. {{ doc.full_name }}</div>
+                                        <span class="spec-tag">{{ doc.specialization }}</span>
+                                    </div>
+                                </div>
+                                <div class="text-muted" style="font-size:0.82rem">
+                                    <i class="bi bi-hospital me-1"></i>{{ doc.hospital_name|default:"Private Practice" }}
+                                    &nbsp;·&nbsp;
+                                    <i class="bi bi-clock me-1"></i>{{ doc.experience }} yrs exp
+                                </div>
+                                <a href="{% url 'book_appointment' doc.id %}" class="btn-book mt-2 d-block text-center">
+                                    <i class="bi bi-calendar-plus me-1"></i>Book Appointment
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'doctor_list' %}" style="color:#1a5276;font-weight:600;font-size:0.9rem">
+                            <i class="bi bi-arrow-right me-1"></i>View all doctors →
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="empty-state"><i class="bi bi-search" style="font-size:2rem;display:block;margin-bottom:0.5rem"></i>No approved doctors yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- RECENT APPOINTMENTS -->
+            <div class="content-card">
+                <div class="card-head" style="color:#1a5276"><i class="bi bi-calendar-check me-2"></i>My Recent Appointments</div>
+                {% if recent_appointments %}
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Doctor</th><th>Date</th><th>Time</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {% for appt in recent_appointments %}
+                            <tr>
+                                <td>
+                                    <div class="fw-600">Dr. {{ appt.doctor.username }}</div>
+                                    {% with dr=appt.doctor.doctorprofile %}
+                                    {% if dr %}<small class="text-muted">{{ dr.specialization }}</small>{% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>{{ appt.date }}</td>
+                                <td>{{ appt.time }}</td>
+                                <td><span class="status-badge status-{{ appt.status|lower }}">{{ appt.status }}</span></td>
+                                <td>
+                                    <a href="{% url 'chat' appt.id %}" class="btn-book" style="background:#8e44ad" title="Chat">
+                                        <i class="bi bi-chat-dots"></i>
+                                    </a>
+                                    {% if appt.status in 'Pending,Approved' %}
+                                    <a href="{% url 'cancel_appointment' appt.id %}" class="btn-book ms-1" style="background:#e74c3c"
+                                       onclick="return confirm('Cancel this appointment?')">
+                                        <i class="bi bi-x-lg"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state"><i class="bi bi-calendar-x" style="font-size:2rem;display:block;margin-bottom:0.5rem"></i>No appointments yet. Book one above!</div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="col-lg-4">
+            <div class="content-card mb-4">
+                <div class="card-head"><i class="bi bi-grid me-2"></i>Quick Links</div>
+                <div class="card-body-inner">
+                    <a href="{% url 'doctor_list' %}" class="sidebar-quick-link">
+                        <i class="bi bi-search"></i>Find Doctors
+                    </a>
+                    <a href="{% url 'patient_appointments' %}" class="sidebar-quick-link">
+                        <i class="bi bi-calendar-check"></i>My Appointments
+                    </a>
+                    <a href="{% url 'ai_home' %}" class="sidebar-quick-link">
+                        <i class="bi bi-robot"></i>AI Symptom Checker
+                    </a>
+                    <a href="{% url 'patient_profile' %}" class="sidebar-quick-link">
+                        <i class="bi bi-person-gear"></i>My Profile
+                    </a>
+                    <a href="{% url 'logout' %}" class="sidebar-quick-link" style="color:#e74c3c">
+                        <i class="bi bi-box-arrow-right" style="color:#e74c3c"></i>Logout
+                    </a>
+                </div>
+            </div>
+
+            <!-- AI ASSISTANT PROMO -->
+            <div class="content-card" style="background:linear-gradient(135deg,#1a2332,#1a5276);color:white">
+                <div class="card-body-inner text-center">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem">🤖</div>
+                    <h5 class="fw-800" style="color:white">AI Symptom Checker</h5>
+                    <p style="color:rgba(255,255,255,0.8);font-size:0.88rem;margin-bottom:1rem">
+                        Describe your symptoms and get instant specialist suggestions — available 24/7.
+                    </p>
+                    <a href="{% url 'ai_home' %}" class="btn btn-light btn-sm rounded-pill fw-600 px-3">
+                        <i class="bi bi-robot me-1"></i>Try AI Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

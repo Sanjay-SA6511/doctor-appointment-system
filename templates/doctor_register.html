@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Doctor Registration – MedCare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-wrapper { padding:2rem 1rem; background:linear-gradient(135deg,#f0f4f8,#d6e4f0); min-height:100vh; }
+    .auth-card { background:white; border-radius:24px; box-shadow:0 20px 60px rgba(26,82,118,0.15); overflow:hidden; max-width:700px; margin:0 auto; }
+    .auth-header { background:linear-gradient(135deg,#1a5276,#16a085); padding:2rem; text-align:center; color:white; }
+    .auth-header .brand-icon { font-size:2.5rem; margin-bottom:0.4rem; }
+    .auth-header h2 { font-size:1.5rem; font-weight:800; margin:0; }
+    .auth-header p { opacity:0.85; margin:0.2rem 0 0; font-size:0.88rem; }
+    .auth-body { padding:2rem; }
+    .form-label { font-weight:600; font-size:0.88rem; color:#333; }
+    .form-control, .form-select { border:2px solid #e8edf2; border-radius:10px; padding:0.6rem 1rem; font-size:0.93rem; transition:border-color 0.2s; }
+    .form-control:focus, .form-select:focus { border-color:#1a5276; box-shadow:0 0 0 3px rgba(26,82,118,0.1); }
+    .btn-register { background:linear-gradient(135deg,#1a5276,#16a085); color:white; border:none; border-radius:12px; padding:0.8rem; font-size:1rem; font-weight:700; width:100%; transition:opacity 0.2s,transform 0.2s; }
+    .btn-register:hover { opacity:0.9; transform:translateY(-1px); color:white; }
+    .step-badge { background:rgba(26,82,118,0.1); color:#1a5276; border-radius:8px; padding:0.3rem 0.8rem; font-size:0.8rem; font-weight:700; display:inline-block; margin-bottom:1rem; }
+    .pending-notice { background:rgba(255,193,7,0.1); border:1px solid #ffc107; border-radius:12px; padding:1rem; margin-bottom:1.5rem; }
+    .file-upload-area { border:2px dashed #c8d6e5; border-radius:12px; padding:1.2rem; text-align:center; background:#f8fafc; cursor:pointer; transition:border-color 0.2s; }
+    .file-upload-area:hover { border-color:#1a5276; }
+    .file-upload-area i { font-size:1.8rem; color:#1a5276; }
+    .file-upload-area p { margin:0.3rem 0 0; font-size:0.85rem; color:#888; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="brand-icon"><i class="bi bi-stethoscope"></i></div>
+            <h2>Doctor Registration</h2>
+            <p>Join MedCare as a verified healthcare professional</p>
+        </div>
+        <div class="auth-body">
+
+            <!-- PENDING NOTICE -->
+            <div class="pending-notice">
+                <i class="bi bi-clock-history me-2 text-warning"></i>
+                <strong>Important:</strong> After registration, your account will be reviewed by our Admin team.
+                You will be able to log in only after approval.
+            </div>
+
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- SECTION 1: Personal Info -->
+                <span class="step-badge"><i class="bi bi-person me-1"></i>Personal Information</span>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" name="full_name" placeholder="Dr. Ramesh Sharma" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email Address *</label>
+                        <input type="email" class="form-control" name="email" placeholder="doctor@hospital.com" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone Number *</label>
+                        <input type="tel" class="form-control" name="phone" placeholder="+91 XXXXXXXXXX" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Hospital / Clinic Name</label>
+                        <input type="text" class="form-control" name="hospital_name" placeholder="City Hospital">
+                    </div>
+                </div>
+
+                <!-- SECTION 2: Medical Details -->
+                <span class="step-badge"><i class="bi bi-clipboard2-pulse me-1"></i>Medical Details</span>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Specialization *</label>
+                        <select class="form-select" name="specialization" required>
+                            <option value="" disabled selected>Select specialization</option>
+                            {% for value, label in specializations %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Qualification *</label>
+                        <input type="text" class="form-control" name="qualification" placeholder="e.g. MBBS, MD, MS" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Experience (Years) *</label>
+                        <input type="number" class="form-control" name="experience" min="0" max="60" placeholder="5" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Medical Council Reg. No.</label>
+                        <input type="text" class="form-control" name="medical_council_reg" placeholder="MC/2020/XXXXX">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Doctor ID *</label>
+                        <input type="text" class="form-control" name="doctor_id" placeholder="Unique Doctor ID / License Number" required>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: Documents -->
+                <span class="step-badge"><i class="bi bi-upload me-1"></i>Documents & Photo</span>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Profile Picture</label>
+                        <div class="file-upload-area" onclick="document.getElementById('profile_picture').click()">
+                            <i class="bi bi-person-circle"></i>
+                            <p>Click to upload your photo</p>
+                            <small class="text-muted">JPG, PNG (Max 5MB)</small>
+                        </div>
+                        <input type="file" id="profile_picture" name="profile_picture" accept="image/*" class="d-none" onchange="showFileName(this, 'profile_pic_name')">
+                        <small id="profile_pic_name" class="text-muted"></small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ID Proof / Medical Certificate</label>
+                        <div class="file-upload-area" onclick="document.getElementById('id_proof').click()">
+                            <i class="bi bi-file-earmark-text"></i>
+                            <p>Click to upload ID proof</p>
+                            <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
+                        </div>
+                        <input type="file" id="id_proof" name="id_proof" class="d-none" onchange="showFileName(this, 'id_proof_name')">
+                        <small id="id_proof_name" class="text-muted"></small>
+                    </div>
+                </div>
+
+                <!-- SECTION 4: Account -->
+                <span class="step-badge"><i class="bi bi-lock me-1"></i>Account Credentials</span>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">Username *</label>
+                        <input type="text" class="form-control" name="username" placeholder="Choose a username" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Password *</label>
+                        <input type="password" class="form-control" name="password" placeholder="Min 8 chars" required minlength="8">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Confirm Password *</label>
+                        <input type="password" class="form-control" name="password2" placeholder="Re-enter" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-register">
+                    <i class="bi bi-send me-2"></i>Submit Registration for Approval
+                </button>
+            </form>
+
+            <div class="text-center mt-3">
+                <p style="font-size:0.9rem;color:#666">
+                    Already registered? <a href="{% url 'login' %}" style="color:#1a5276;font-weight:600">Login here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showFileName(input, targetId) {
+    const el = document.getElementById(targetId);
+    if (input.files && input.files[0]) {
+        el.textContent = '✓ ' + input.files[0].name;
+        el.style.color = '#16a085';
+    }
+}
+</script>
+{% endblock %}

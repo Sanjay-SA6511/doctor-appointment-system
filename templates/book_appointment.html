@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Appointment – MedCare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .book-page { padding:2rem 1rem; min-height:80vh; display:flex; align-items:center; justify-content:center; }
+    .book-card { background:white; border-radius:24px; box-shadow:0 20px 60px rgba(26,82,118,0.15); overflow:hidden; max-width:600px; width:100%; }
+    .book-header { background:linear-gradient(135deg,#1a5276,#16a085); color:white; padding:2rem; }
+    .book-header h2 { font-size:1.5rem; font-weight:800; margin:0; }
+    .book-body { padding:2rem; }
+    .doctor-info-box { background:#f8fafc; border-radius:14px; padding:1.2rem; margin-bottom:1.5rem; border:2px solid #e8edf2; display:flex; align-items:center; gap:1rem; }
+    .doc-avatar { width:60px; height:60px; border-radius:50%; object-fit:cover; background:linear-gradient(135deg,#e8edf2,#d6e4f0); display:flex; align-items:center; justify-content:center; font-size:1.8rem; }
+    .spec-badge { background:rgba(26,82,118,0.1); color:#1a5276; border-radius:20px; padding:3px 10px; font-size:0.78rem; font-weight:700; }
+    .form-label { font-weight:600; font-size:0.9rem; color:#333; }
+    .form-control { border:2px solid #e8edf2; border-radius:12px; padding:0.7rem 1rem; font-size:0.95rem; transition:border-color 0.2s; }
+    .form-control:focus { border-color:#1a5276; box-shadow:0 0 0 3px rgba(26,82,118,0.08); }
+    .btn-confirm { background:linear-gradient(135deg,#1a5276,#16a085); color:white; border:none; border-radius:12px; padding:0.85rem; font-size:1rem; font-weight:700; width:100%; transition:opacity 0.2s,transform 0.2s; }
+    .btn-confirm:hover { opacity:0.9; transform:translateY(-1px); color:white; }
+    .disclaimer { background:rgba(255,193,7,0.1); border:1px solid #ffc107; border-radius:10px; padding:0.8rem 1rem; margin-top:1rem; font-size:0.85rem; color:#856404; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="book-page">
+    <div class="book-card">
+        <div class="book-header">
+            <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-calendar-plus-fill" style="font-size:2rem"></i>
+                <div>
+                    <h2>Book Appointment</h2>
+                    <p class="mb-0 opacity-75" style="font-size:0.9rem">Select your preferred date and time</p>
+                </div>
+            </div>
+        </div>
+        <div class="book-body">
+
+            <!-- DOCTOR INFO -->
+            <div class="doctor-info-box">
+                {% if doctor.profile_picture %}
+                <img src="{{ doctor.profile_picture.url }}" class="doc-avatar" alt="{{ doctor.full_name }}">
+                {% else %}
+                <div class="doc-avatar">🩺</div>
+                {% endif %}
+                <div>
+                    <div class="fw-700" style="font-size:1.05rem;color:#1a2332">Dr. {{ doctor.full_name }}</div>
+                    <span class="spec-badge">{{ doctor.specialization }}</span>
+                    {% if doctor.hospital_name %}
+                    <div class="mt-1" style="font-size:0.85rem;color:#888">
+                        <i class="bi bi-hospital me-1"></i>{{ doctor.hospital_name }}
+                    </div>
+                    {% endif %}
+                    <div style="font-size:0.85rem;color:#888">
+                        <i class="bi bi-clock me-1"></i>{{ doctor.experience }} years experience
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOOKING FORM -->
+            <form method="POST">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="date">
+                            <i class="bi bi-calendar3 me-1"></i>Appointment Date *
+                        </label>
+                        <input type="date" class="form-control" id="date" name="date" required
+                               min="{{ today }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="time">
+                            <i class="bi bi-clock me-1"></i>Preferred Time *
+                        </label>
+                        <input type="time" class="form-control" id="time" name="time" required
+                               min="08:00" max="20:00">
+                    </div>
+                </div>
+
+                <div class="disclaimer mt-3">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    Your appointment will be <strong>Pending</strong> until the doctor approves it.
+                    You will be able to chat with the doctor after booking.
+                </div>
+
+                <button type="submit" class="btn-confirm mt-4">
+                    <i class="bi bi-check-circle me-2"></i>Confirm Booking
+                </button>
+            </form>
+
+            <div class="text-center mt-3">
+                <a href="{% url 'doctor_list' %}" style="color:#888;font-size:0.9rem;text-decoration:none">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Doctors
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set minimum date to today
+document.getElementById('date').min = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

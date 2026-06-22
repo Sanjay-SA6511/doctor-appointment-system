@@ -1,0 +1,122 @@
+"""
+Django settings for MedCare – AI Powered Doctor Appointment System.
+"""
+
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = 'django-insecure-_qh!*ktef8m(6x5cgn0=b_opjj^1*$y5m2@$qcdwl20cohpmqk'
+
+DEBUG = True
+
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+
+# ── Application definition ────────────────────────────────────────────────────
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+
+    # MedCare apps
+    'accounts',
+    'doctors',
+    'patients',
+    'appointments',
+    'reviews',
+    'ai_assistant',
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+ROOT_URLCONF = 'config.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'config.wsgi.application'
+
+
+# ── Database ──────────────────────────────────────────────────────────────────
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+
+# ── Password validation ───────────────────────────────────────────────────────
+
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+
+# ── Internationalisation ──────────────────────────────────────────────────────
+
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE     = 'Asia/Kolkata'
+USE_I18N      = True
+USE_TZ        = True
+
+
+# ── Static & Media files ──────────────────────────────────────────────────────
+
+STATIC_URL       = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# ── Auth settings ─────────────────────────────────────────────────────────────
+
+AUTH_USER_MODEL      = 'accounts.User'
+LOGIN_URL            = '/login/'
+LOGIN_REDIRECT_URL   = '/'
+LOGOUT_REDIRECT_URL  = '/'
+
+
+# ── Default primary key field ─────────────────────────────────────────────────
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ── Email (optional — configure for production) ───────────────────────────────
+# EMAIL_BACKEND   = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST      = 'smtp.gmail.com'
+# EMAIL_PORT      = 587
+# EMAIL_USE_TLS   = True
+# EMAIL_HOST_USER = 'your_email@gmail.com'
+# EMAIL_HOST_PASSWORD = 'your_app_password'

@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard – MedCare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-page { padding: 2rem 0; }
+    .stat-card { background:white; border-radius:16px; padding:1.5rem; box-shadow:0 6px 24px rgba(26,82,118,0.1); border-left:5px solid; transition:transform 0.2s; }
+    .stat-card:hover { transform:translateY(-3px); }
+    .stat-card.blue   { border-color:#1a5276; }
+    .stat-card.teal   { border-color:#16a085; }
+    .stat-card.orange { border-color:#f39c12; }
+    .stat-card.purple { border-color:#8e44ad; }
+    .stat-num { font-size:2rem; font-weight:900; }
+    .stat-label { font-size:0.85rem; color:#888; font-weight:500; }
+    .section-card { background:white; border-radius:16px; box-shadow:0 6px 24px rgba(26,82,118,0.1); margin-bottom:1.5rem; overflow:hidden; }
+    .section-card-header { padding:1.2rem 1.5rem; font-size:1rem; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+    .section-card-header.pending  { background:rgba(255,193,7,0.12); color:#856404; border-bottom:2px solid #ffc107; }
+    .section-card-header.approved { background:rgba(22,160,133,0.1); color:#0a5140; border-bottom:2px solid #16a085; }
+    .section-card-header.patients { background:rgba(26,82,118,0.1); color:#1a5276; border-bottom:2px solid #1a5276; }
+    .section-card-header.appts   { background:rgba(142,68,173,0.1); color:#6c3483; border-bottom:2px solid #8e44ad; }
+    table { width:100%; }
+    th { background:#f8fafc; font-size:0.83rem; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.5px; padding:0.8rem 1rem; }
+    td { padding:0.85rem 1rem; font-size:0.92rem; border-top:1px solid #f0f4f8; vertical-align:middle; }
+    .badge-pending   { background:#fff3cd; color:#856404; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:600; }
+    .badge-approved  { background:#d1e7dd; color:#0a3622; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:600; }
+    .btn-approve { background:#16a085; color:white; border:none; border-radius:8px; padding:5px 14px; font-size:0.83rem; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; transition:opacity 0.2s; }
+    .btn-approve:hover { opacity:0.85; color:white; }
+    .btn-reject  { background:#e74c3c; color:white; border:none; border-radius:8px; padding:5px 14px; font-size:0.83rem; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; transition:opacity 0.2s; }
+    .btn-reject:hover { opacity:0.85; color:white; }
+    .btn-del  { background:#f39c12; color:white; border:none; border-radius:8px; padding:5px 12px; font-size:0.82rem; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; transition:opacity 0.2s; }
+    .btn-del:hover { opacity:0.85; color:white; }
+    .doc-avatar { width:38px; height:38px; border-radius:50%; object-fit:cover; background:#e8edf2; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
+    .empty-state { padding:3rem; text-align:center; color:#aaa; }
+    .empty-state i { font-size:2.5rem; margin-bottom:0.5rem; display:block; }
+    .admin-header { background:linear-gradient(135deg,#1a5276,#16a085); color:white; padding:2rem; border-radius:16px; margin-bottom:2rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-page container-fluid px-4">
+
+    <!-- ADMIN HEADER -->
+    <div class="admin-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="mb-1" style="font-size:1.8rem;font-weight:800">
+                    <i class="bi bi-speedometer2 me-2"></i>Admin Dashboard
+                </h1>
+                <p class="mb-0 opacity-75">Welcome back, {{ user.username }} — Full system control</p>
+            </div>
+            <div class="col-auto">
+                <a href="/admin/" class="btn btn-light btn-sm rounded-pill fw-600 px-3">
+                    <i class="bi bi-gear me-1"></i>Django Admin
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card blue">
+                <div class="stat-num text-primary">{{ doctor_count }}</div>
+                <div class="stat-label"><i class="bi bi-person-badge me-1"></i>Total Doctors</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card teal">
+                <div class="stat-num" style="color:#16a085">{{ patient_count }}</div>
+                <div class="stat-label"><i class="bi bi-people me-1"></i>Total Patients</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card orange">
+                <div class="stat-num" style="color:#f39c12">{{ appointment_count }}</div>
+                <div class="stat-label"><i class="bi bi-calendar me-1"></i>Appointments</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card purple">
+                <div class="stat-num" style="color:#8e44ad">{{ pending_count }}</div>
+                <div class="stat-label"><i class="bi bi-hourglass-split me-1"></i>Pending</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- LEFT COLUMN -->
+        <div class="col-lg-8">
+
+            <!-- PENDING DOCTORS -->
+            <div class="section-card" id="pending-doctors">
+                <div class="section-card-header pending">
+                    <span><i class="bi bi-clock-history me-2"></i>Pending Doctor Approvals</span>
+                    <span class="badge" style="background:#ffc107;color:#333;border-radius:20px;padding:4px 12px;">{{ pending_doctors|length }}</span>
+                </div>
+                {% if pending_doctors %}
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Specialization</th>
+                                <th>Qualification</th>
+                                <th>Experience</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in pending_doctors %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if doc.profile_picture %}
+                                        <img src="{{ doc.profile_picture.url }}" class="doc-avatar" alt="{{ doc.full_name }}">
+                                        {% else %}
+                                        <div class="doc-avatar">👨‍⚕️</div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-600">{{ doc.full_name }}</div>
+                                            <small class="text-muted">{{ doc.email }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ doc.specialization }}</td>
+                                <td>{{ doc.qualification|default:"—" }}</td>
+                                <td>{{ doc.experience }} yrs</td>
+                                <td>
+                                    <a href="{% url 'approve_doctor' doc.id %}" class="btn-approve me-1">
+                                        <i class="bi bi-check-lg"></i> Approve
+                                    </a>
+                                    <a href="{% url 'reject_doctor' doc.id %}" class="btn-reject"
+                                       onclick="return confirm('Reject Dr. {{ doc.full_name }}? This will delete their account.')">
+                                        <i class="bi bi-x-lg"></i> Reject
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    No pending approvals — all caught up!
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- APPROVED DOCTORS -->
+            <div class="section-card" id="approved-doctors">
+                <div class="section-card-header approved">
+                    <span><i class="bi bi-patch-check me-2"></i>Approved Doctors</span>
+                    <span class="badge" style="background:#16a085;color:white;border-radius:20px;padding:4px 12px;">{{ approved_doctors|length }}</span>
+                </div>
+                {% if approved_doctors %}
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Specialization</th>
+                                <th>Hospital</th>
+                                <th>Experience</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in approved_doctors %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if doc.profile_picture %}
+                                        <img src="{{ doc.profile_picture.url }}" class="doc-avatar" alt="{{ doc.full_name }}">
+                                        {% else %}
+                                        <div class="doc-avatar">🩺</div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-600">Dr. {{ doc.full_name }}</div>
+                                            <small class="text-muted">{{ doc.doctor_id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ doc.specialization }}</td>
+                                <td>{{ doc.hospital_name|default:"—" }}</td>
+                                <td>{{ doc.experience }} yrs</td>
+                                <td>
+                                    <span class="badge-approved">✓ Approved</span>
+                                    <a href="{% url 'delete_user' doc.user.id %}" class="btn-del ms-1"
+                                       onclick="return confirm('Delete Dr. {{ doc.full_name }}? This cannot be undone.')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-person-x"></i>
+                    No approved doctors yet.
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-lg-4">
+
+            <!-- PATIENTS LIST -->
+            <div class="section-card mb-4" id="patients">
+                <div class="section-card-header patients">
+                    <span><i class="bi bi-people me-2"></i>Registered Patients</span>
+                </div>
+                {% if all_patients %}
+                <div class="table-responsive" style="max-height:280px;overflow-y:auto">
+                    <table>
+                        <thead><tr><th>Name</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {% for patient in all_patients %}
+                            <tr>
+                                <td>
+                                    <div class="fw-600">{{ patient.full_name|default:patient.user.username }}</div>
+                                    <small class="text-muted">{{ patient.gender }} · {{ patient.age }} yrs</small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'delete_user' patient.user.id %}" class="btn-del"
+                                       onclick="return confirm('Delete patient {{ patient.full_name }}?')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state"><i class="bi bi-person-x"></i>No patients yet.</div>
+                {% endif %}
+            </div>
+
+            <!-- RECENT APPOINTMENTS -->
+            <div class="section-card" id="appointments">
+                <div class="section-card-header appts">
+                    <span><i class="bi bi-calendar3 me-2"></i>Recent Appointments</span>
+                </div>
+                {% if all_appointments %}
+                <div style="max-height:280px;overflow-y:auto">
+                    {% for appt in all_appointments|slice:":10" %}
+                    <div class="px-3 py-2 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div style="font-size:0.87rem;font-weight:600">{{ appt.patient.username }}</div>
+                                <small class="text-muted">→ Dr. {{ appt.doctor.username }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge-{% if appt.status == 'Pending' %}pending{% elif appt.status == 'Approved' %}approved{% else %}pending{% endif %}">{{ appt.status }}</span>
+                                <div><small class="text-muted">{{ appt.date }}</small></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state"><i class="bi bi-calendar-x"></i>No appointments yet.</div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

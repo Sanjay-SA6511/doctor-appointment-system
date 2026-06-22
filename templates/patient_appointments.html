@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}My Appointments – MedCare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .appt-page { padding:2rem 0; }
+    .page-header { background:linear-gradient(135deg,#1a5276,#16a085); color:white; padding:1.8rem 2rem; border-radius:16px; margin-bottom:2rem; }
+    .content-card { background:white; border-radius:16px; box-shadow:0 6px 24px rgba(26,82,118,0.1); overflow:hidden; }
+    table { width:100%; border-collapse:collapse; }
+    th { background:#f8fafc; font-size:0.82rem; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.5px; padding:0.8rem 1rem; }
+    td { padding:0.85rem 1rem; font-size:0.92rem; border-top:1px solid #f0f4f8; vertical-align:middle; }
+    .status-badge { padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:700; }
+    .status-pending   { background:#fff3cd; color:#856404; }
+    .status-approved  { background:#d1e7dd; color:#0a3622; }
+    .status-rejected  { background:#f8d7da; color:#842029; }
+    .status-completed { background:#cff4fc; color:#055160; }
+    .status-cancelled { background:#e2e3e5; color:#41464b; }
+    .btn-sm-action { padding:5px 14px; border-radius:8px; font-size:0.83rem; font-weight:600; border:none; cursor:pointer; text-decoration:none; display:inline-block; transition:opacity 0.2s; }
+    .btn-chat-sm   { background:#8e44ad; color:white; }
+    .btn-cancel-sm { background:#e74c3c; color:white; }
+    .btn-sm-action:hover { opacity:0.85; }
+    .empty-state { padding:3rem; text-align:center; color:#aaa; }
+    .tab-filter { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1rem; }
+    .tab-btn { padding:6px 16px; border-radius:20px; font-size:0.85rem; font-weight:600; border:2px solid #e8edf2; background:white; cursor:pointer; transition:all 0.2s; }
+    .tab-btn.active, .tab-btn:hover { background:#1a5276; color:white; border-color:#1a5276; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="appt-page container-fluid px-4">
+
+    <div class="page-header">
+        <h1 style="font-size:1.6rem;font-weight:800;margin:0">
+            <i class="bi bi-calendar-check me-2"></i>My Appointments
+        </h1>
+        <p class="mb-0 opacity-75 mt-1">All your appointment history</p>
+    </div>
+
+    <!-- FILTER TABS -->
+    <div class="tab-filter">
+        <button class="tab-btn active" onclick="filterTable('all', event)">All</button>
+        <button class="tab-btn" onclick="filterTable('Pending', event)">⏳ Pending</button>
+        <button class="tab-btn" onclick="filterTable('Approved', event)">✅ Approved</button>
+        <button class="tab-btn" onclick="filterTable('Completed', event)">🏁 Completed</button>
+        <button class="tab-btn" onclick="filterTable('Rejected', event)">❌ Rejected</button>
+        <button class="tab-btn" onclick="filterTable('Cancelled', event)">🚫 Cancelled</button>
+    </div>
+
+    <div class="content-card">
+        {% if appointments %}
+        <div class="table-responsive">
+            <table id="apptTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Doctor</th>
+                        <th>Specialization</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in appointments %}
+                    <tr class="appt-row" data-status="{{ appt.status }}">
+                        <td class="text-muted">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="fw-600">Dr. {{ appt.doctor.username }}</div>
+                        </td>
+                        <td>
+                            {% with dr=appt.doctor.doctorprofile %}
+                            {% if dr %}<span style="background:rgba(26,82,118,0.1);color:#1a5276;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:600">{{ dr.specialization }}</span>
+                            {% else %}—{% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>{{ appt.date }}</td>
+                        <td>{{ appt.time }}</td>
+                        <td>
+                            <span class="status-badge status-{{ appt.status|lower }}">
+                                {% if appt.status == 'Pending' %}⏳
+                                {% elif appt.status == 'Approved' %}✅
+                                {% elif appt.status == 'Completed' %}🏁
+                                {% elif appt.status == 'Rejected' %}❌
+                                {% else %}🚫{% endif %}
+                                {{ appt.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'chat' appt.id %}" class="btn-sm-action btn-chat-sm me-1" title="Chat with doctor">
+                                <i class="bi bi-chat-dots"></i>
+                            </a>
+                            {% if appt.status == 'Pending' or appt.status == 'Approved' %}
+                            <a href="{% url 'cancel_appointment' appt.id %}" class="btn-sm-action btn-cancel-sm"
+                               onclick="return confirm('Are you sure you want to cancel this appointment?')">
+                                <i class="bi bi-x-lg"></i> Cancel
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-calendar-x" style="font-size:3rem;display:block;margin-bottom:1rem"></i>
+            <h5>No appointments yet</h5>
+            <p>Book an appointment with a verified doctor to get started.</p>
+            <a href="{% url 'doctor_list' %}" class="btn btn-primary rounded-pill px-4 mt-2">
+                <i class="bi bi-search me-1"></i>Find Doctors
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="text-center mt-3">
+        <a href="{% url 'patient_home' %}" style="color:#1a5276;font-weight:600">
+            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable(status, evt) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    evt.target.classList.add('active');
+    document.querySelectorAll('.appt-row').forEach(row => {
+        row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

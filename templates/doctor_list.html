@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Find Doctors – MedCare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .list-page { padding:2rem 0; }
+    .page-header { background:linear-gradient(135deg,#1a5276,#16a085); color:white; padding:2rem; border-radius:16px; margin-bottom:2rem; }
+    .search-card { background:white; border-radius:16px; box-shadow:0 6px 24px rgba(26,82,118,0.1); padding:1.5rem; margin-bottom:2rem; }
+    .search-control { border:2px solid #e8edf2; border-radius:12px; padding:0.7rem 1rem; font-size:0.95rem; outline:none; transition:border-color 0.2s; width:100%; }
+    .search-control:focus { border-color:#1a5276; box-shadow:0 0 0 3px rgba(26,82,118,0.08); }
+    .btn-search { background:linear-gradient(135deg,#1a5276,#16a085); color:white; border:none; border-radius:12px; padding:0.7rem 1.8rem; font-weight:600; cursor:pointer; transition:opacity 0.2s; }
+    .btn-search:hover { opacity:0.9; }
+    .spec-filter { display:flex; gap:8px; flex-wrap:wrap; }
+    .spec-chip { padding:5px 15px; border-radius:20px; font-size:0.85rem; font-weight:600; border:2px solid #e8edf2; background:white; cursor:pointer; text-decoration:none; color:#444; transition:all 0.2s; }
+    .spec-chip:hover, .spec-chip.active { background:#1a5276; color:white; border-color:#1a5276; }
+    .doctor-card { background:white; border-radius:18px; padding:1.5rem; box-shadow:0 6px 24px rgba(26,82,118,0.08); border:2px solid #f0f4f8; transition:all 0.25s; height:100%; }
+    .doctor-card:hover { border-color:#1a5276; box-shadow:0 12px 36px rgba(26,82,118,0.15); transform:translateY(-4px); }
+    .doc-avatar { width:72px; height:72px; border-radius:50%; object-fit:cover; background:linear-gradient(135deg,#e8edf2,#d6e4f0); display:flex; align-items:center; justify-content:center; font-size:2rem; border:3px solid #f0f4f8; }
+    .spec-badge { background:rgba(26,82,118,0.1); color:#1a5276; border-radius:20px; padding:4px 12px; font-size:0.8rem; font-weight:700; display:inline-block; }
+    .info-row { display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#666; margin-bottom:6px; }
+    .info-row i { color:#1a5276; }
+    .btn-book { background:linear-gradient(135deg,#1a5276,#16a085); color:white; border:none; border-radius:10px; padding:0.65rem 1.2rem; font-weight:600; width:100%; text-decoration:none; display:block; text-align:center; transition:opacity 0.2s; margin-top:0.8rem; }
+    .btn-book:hover { opacity:0.9; color:white; }
+    .btn-view { background:white; color:#1a5276; border:2px solid #1a5276; border-radius:10px; padding:0.55rem 1rem; font-weight:600; width:100%; text-decoration:none; display:block; text-align:center; transition:all 0.2s; margin-top:0.5rem; }
+    .btn-view:hover { background:#1a5276; color:white; }
+    .empty-state { padding:4rem; text-align:center; color:#aaa; }
+    .results-count { font-size:0.9rem; color:#888; margin-bottom:1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="list-page container-fluid px-4">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <h1 style="font-size:1.8rem;font-weight:800;margin:0">
+            <i class="bi bi-search me-2"></i>Find Your Doctor
+        </h1>
+        <p class="mb-0 opacity-75 mt-1">Browse verified healthcare professionals</p>
+    </div>
+
+    <!-- SEARCH & FILTER -->
+    <div class="search-card">
+        <form method="GET" action="{% url 'doctor_list' %}">
+            <div class="row g-3 align-items-end mb-3">
+                <div class="col-md-7">
+                    <label class="form-label fw-600" style="font-size:0.88rem;color:#555">Search by name or hospital</label>
+                    <input type="text" name="search" class="search-control" placeholder="e.g. Dr. Sharma, City Hospital..."
+                           value="{{ search_query }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-600" style="font-size:0.88rem;color:#555">Specialization</label>
+                    <select name="specialization" class="search-control" style="border-radius:12px">
+                        <option value="">All Specializations</option>
+                        {% for value, label in specializations %}
+                        <option value="{{ value }}" {% if selected_spec == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn-search w-100">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- SPEC QUICK FILTER PILLS -->
+        <div class="spec-filter">
+            <a href="{% url 'doctor_list' %}" class="spec-chip {% if not selected_spec %}active{% endif %}">All</a>
+            {% for value, label in specializations %}
+            <a href="{% url 'doctor_list' %}?specialization={{ value }}" class="spec-chip {% if selected_spec == value %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- RESULTS -->
+    {% if doctors %}
+    <p class="results-count"><i class="bi bi-funnel me-1"></i>Showing {{ doctors|length }} doctor{{ doctors|length|pluralize }}</p>
+    <div class="row g-4">
+        {% for doc in doctors %}
+        <div class="col-md-6 col-lg-4">
+            <div class="doctor-card">
+                <!-- DOCTOR HEADER -->
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    {% if doc.profile_picture %}
+                    <img src="{{ doc.profile_picture.url }}" class="doc-avatar" alt="{{ doc.full_name }}">
+                    {% else %}
+                    <div class="doc-avatar">🩺</div>
+                    {% endif %}
+                    <div>
+                        <h5 class="mb-1 fw-800" style="font-size:1rem;color:#1a2332">Dr. {{ doc.full_name }}</h5>
+                        <span class="spec-badge">{{ doc.specialization }}</span>
+                    </div>
+                </div>
+
+                <!-- DOCTOR INFO -->
+                <div class="info-row"><i class="bi bi-mortarboard-fill"></i><span>{{ doc.qualification|default:"Not specified" }}</span></div>
+                <div class="info-row"><i class="bi bi-hospital-fill"></i><span>{{ doc.hospital_name|default:"Private Practice" }}</span></div>
+                <div class="info-row"><i class="bi bi-clock-fill"></i><span>{{ doc.experience }} years experience</span></div>
+                {% if doc.medical_council_reg %}
+                <div class="info-row"><i class="bi bi-patch-check-fill"></i><span>Reg. {{ doc.medical_council_reg }}</span></div>
+                {% endif %}
+
+                <!-- AVAILABILITY INDICATOR -->
+                <div class="d-flex align-items-center gap-2 mt-2 mb-1">
+                    <div style="width:8px;height:8px;background:#16a085;border-radius:50%;animation:pulse 1.5s infinite"></div>
+                    <span style="font-size:0.82rem;color:#16a085;font-weight:600">Available for Appointments</span>
+                </div>
+
+                <!-- ACTIONS -->
+                {% if user.is_authenticated and user.role == 'patient' %}
+                <a href="{% url 'book_appointment' doc.id %}" class="btn-book">
+                    <i class="bi bi-calendar-plus me-1"></i>Book Appointment
+                </a>
+                {% elif not user.is_authenticated %}
+                <a href="{% url 'login' %}" class="btn-book">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Login to Book
+                </a>
+                {% endif %}
+                <a href="{% url 'doctor_profile' doc.id %}" class="btn-view">
+                    <i class="bi bi-person-lines-fill me-1"></i>View Profile
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-search" style="font-size:3.5rem;display:block;margin-bottom:1rem;color:#ccc"></i>
+        <h4 style="color:#888">No doctors found</h4>
+        <p>Try a different search term or specialization filter.</p>
+        <a href="{% url 'doctor_list' %}" class="btn btn-outline-primary rounded-pill px-4 mt-2">Clear Filters</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.6;transform:scale(1.3);} }
+</style>
+{% endblock %}

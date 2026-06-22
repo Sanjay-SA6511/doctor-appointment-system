@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile – Doctor | MedCare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-page { padding:2rem 0; }
+    .profile-card { background:white; border-radius:20px; box-shadow:0 8px 32px rgba(26,82,118,0.12); overflow:hidden; max-width:650px; margin:0 auto; }
+    .profile-header { background:linear-gradient(135deg,#1a5276,#16a085); padding:2rem; text-align:center; color:white; }
+    .avatar-img { width:90px; height:90px; border-radius:50%; object-fit:cover; border:4px solid rgba(255,255,255,0.4); }
+    .avatar-placeholder { width:90px; height:90px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:2.5rem; border:4px solid rgba(255,255,255,0.3); margin:0 auto; }
+    .profile-body { padding:2rem; }
+    .form-label { font-weight:600; font-size:0.88rem; color:#333; }
+    .form-control, .form-select { border:2px solid #e8edf2; border-radius:10px; padding:0.6rem 1rem; font-size:0.93rem; transition:border-color 0.2s; }
+    .form-control:focus, .form-select:focus { border-color:#1a5276; box-shadow:0 0 0 3px rgba(26,82,118,0.08); }
+    .btn-save { background:linear-gradient(135deg,#1a5276,#16a085); color:white; border:none; border-radius:12px; padding:0.8rem; font-size:1rem; font-weight:700; width:100%; transition:opacity 0.2s; }
+    .btn-save:hover { opacity:0.9; color:white; }
+    .readonly-field { background:#f8fafc; color:#888; border-color:#e8edf2; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-page container">
+    <div class="profile-card">
+        <div class="profile-header">
+            {% if profile.profile_picture %}
+            <img src="{{ profile.profile_picture.url }}" class="avatar-img mb-2" alt="{{ profile.full_name }}">
+            {% else %}
+            <div class="avatar-placeholder mb-2">🩺</div>
+            {% endif %}
+            <h2 style="font-size:1.4rem;font-weight:800;margin:0">Dr. {{ profile.full_name }}</h2>
+            <p class="mb-0 opacity-75" style="font-size:0.88rem">{{ profile.specialization }} · {{ profile.experience }} yrs</p>
+        </div>
+        <div class="profile-body">
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" name="full_name" value="{{ profile.full_name }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-control" name="phone" value="{{ profile.phone }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Hospital / Clinic</label>
+                        <input type="text" class="form-control" name="hospital_name" value="{{ profile.hospital_name }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Specialization (cannot change)</label>
+                        <input type="text" class="form-control readonly-field" value="{{ profile.specialization }}" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Qualification</label>
+                        <input type="text" class="form-control" name="qualification" value="{{ profile.qualification }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Experience (Years)</label>
+                        <input type="number" class="form-control" name="experience" value="{{ profile.experience }}" min="0" max="60">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Profile Picture</label>
+                        <input type="file" class="form-control" name="profile_picture" accept="image/*">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Doctor ID (cannot change)</label>
+                        <input type="text" class="form-control readonly-field" value="{{ profile.doctor_id }}" readonly>
+                    </div>
+                </div>
+                <button type="submit" class="btn-save mt-4">
+                    <i class="bi bi-save me-2"></i>Save Changes
+                </button>
+            </form>
+            <div class="text-center mt-3">
+                <a href="{% url 'doctor_home' %}" style="color:#1a5276;font-weight:600;font-size:0.9rem">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
